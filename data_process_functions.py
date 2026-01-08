@@ -203,3 +203,39 @@ def Kuzmin_fit(TK, Js, Tmeas, K1_in_JPerCubibm):
     print(f"K_{Tmeas} (J/m^3): ", K_meas)
 
     return Js_meas, A_meas, K_meas, xfine, Js_0, s, m_s
+
+
+# ---------------------------------------------------------------------
+# 1) Define the PDF in radians (unnormalized).
+#    p_theta(theta) = exp(-theta^2/sigma^2) * sin(theta), for 0 <= theta <= pi
+# ---------------------------------------------------------------------
+def p_theta(theta, sigma):
+    return np.exp(-theta**2 / sigma**2) * np.sin(theta)
+
+# ---------------------------------------------------------------------
+# 2) Find the maximum of p_theta over [0, pi] for rejection sampling
+# ---------------------------------------------------------------------
+def theta_phi(N_samples, sigma):
+    thetas_test = np.linspace(0, np.pi, 10000)
+    p_values = p_theta(thetas_test, sigma)
+    p_max = p_values.max()
+
+    # ---------------------------------------------------------------------
+    # 3) Rejection sampling in radians
+    # ---------------------------------------------------------------------
+    samples_rad = []
+    while len(samples_rad) < N_samples:
+        # Propose a random angle in [0, pi]
+        theta_proposal = np.pi * np.random.rand()
+        # Propose a random vertical "test" value in [0, p_max]
+        r = p_max * np.random.rand()
+        # Accept if r <= p_theta(theta_proposal)
+        if r <= p_theta(theta_proposal, sigma):
+            samples_rad.append(theta_proposal)
+
+    samples_rad = np.array(samples_rad)
+    # np.save('theta20',samples_rad)
+
+    phi = 2.0 * np.pi * np.random.rand(N_samples)
+    # np.save('phi',phi)
+    return samples_rad, phi
